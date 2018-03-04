@@ -5,6 +5,7 @@ import Prelude
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Eff.Ref (REF, readRef)
+import Data.Map (empty, showTree)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (wrap)
 import Node.Express.Handler (Handler, nextThrow)
@@ -15,6 +16,7 @@ import State (AppState, registerLuminaire)
 getStateHandler :: forall e. AppState -> Handler (ref :: REF | e)
 getStateHandler state = do
   curState <- liftEff $ readRef state
+  --sendJson (showTree curState)
   sendJson curState
 
 registerLuminaireHandler :: forall e. AppState -> Handler (ref :: REF | e)
@@ -24,6 +26,14 @@ registerLuminaireHandler state = do
 
   case [idParam, gatewayParam] of
     [Just id, Just gatewayId] -> do
-      liftEff $ registerLuminaire (wrap id) { gateway: (wrap gatewayId), lights: [] } state
+      liftEff $ registerLuminaire (wrap id) { gateway: (wrap gatewayId), lights: empty } state
       sendJson { status: "Luminaire registered" }
     _ -> nextThrow $ error "Luminaire and gateway IDs are required"
+
+setLightHandler :: forall e. AppState -> Handler (ref :: REF | e)
+setLightHandler state = do
+  idParam <- getRouteParam "id"
+  lightIdParam <- getRouteParam "lightId"
+  --colorParam <- getBodyParam "color"
+  --transitionTimeParam <- getBodyParam "transitionTime"
+  sendJson { status: "Not implemented" }

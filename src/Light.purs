@@ -22,8 +22,7 @@ newtype LightId = LightId String
 
 --- Model type definitions
 type LightState =
-  { id :: LightId
-  , color :: LightColor
+  { color :: LightColor
   , prevColor :: LightColor
   , transitionStart :: Instant
   , transitionTime :: Milliseconds

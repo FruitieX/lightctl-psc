@@ -6,6 +6,7 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (Error)
 import Control.Monad.Eff.Ref (REF)
+import Data.Map (empty)
 import Luminaire (LuminaireId(..), GatewayId(..))
 import Node.HTTP (Request, Server)
 import State (AppState, registerLuminaire)
@@ -18,7 +19,7 @@ handleMessage
   -> WebSocketMessage
   -> Eff (ref :: REF, ws :: WS, console :: CONSOLE | e) Unit
 handleMessage state ws msg = do
-  registerLuminaire (LuminaireId "Test") { gateway: (GatewayId "ws"), lights: [] } state
+  registerLuminaire (LuminaireId "Test") { gateway: (GatewayId "ws"), lights: empty } state
   log (show msg)
 
 handleError :: forall e. Error -> Eff (ws :: WS, console :: CONSOLE | e) Unit
