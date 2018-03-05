@@ -12,7 +12,11 @@
     "purescript-ws": "^0.0.2",
     "purescript-express": "^0.6.3",
     "purescript-node-http": "^4.2.0",
-    "purescript-node-process": "^5.0.0"
+    "purescript-node-process": "^5.0.0",
+    "purescript-simple-json": "^1.1.0",
+    "purescript-numbers": "^5.0.0",
+    "purescript-record": "^0.2.6",
+    "purescript-now": "^3.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"
