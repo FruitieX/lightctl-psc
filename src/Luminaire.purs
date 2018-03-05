@@ -10,7 +10,7 @@ import Data.Maybe (Maybe, isJust)
 import Data.Newtype (class Newtype, over, unwrap)
 import Data.Time.Duration (Milliseconds)
 import Data.Traversable (traverse)
-import Light (Light, LightColor, LightId, nextState)
+import Light (Light, LightColor, LightId, Lights, nextState)
 
 -- Type definitions
 newtype LuminaireId = LuminaireId String
@@ -29,7 +29,7 @@ instance showGatewayId :: Show GatewayId where
 --- Model type definitions
 newtype Luminaire = Luminaire
   { gateway :: GatewayId
-  , lights :: Map LightId Light
+  , lights :: Lights
   }
 derive instance newtypeLuminaire :: Newtype Luminaire _
 

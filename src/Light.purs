@@ -5,6 +5,7 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Now (NOW, now)
 import Data.DateTime.Instant (Instant)
+import Data.Map (Map)
 import Data.Maybe (Maybe, fromMaybe)
 import Data.Newtype (class Newtype, unwrap, wrap)
 import Data.Time.Duration (Milliseconds(..))
@@ -52,6 +53,8 @@ newtype Light = Light
   , transitionTime :: Milliseconds
   }
 derive instance newtypeLight :: Newtype Light _
+
+type Lights = Map LightId Light
 
 instance showLight :: Show Light where
   show (Light state) =
