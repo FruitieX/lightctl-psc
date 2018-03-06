@@ -4,7 +4,7 @@ import Prelude
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Now (NOW, now)
-import Data.DateTime.Instant (Instant)
+import Data.DateTime.Instant (unInstant)
 import Data.Map (Map)
 import Data.Maybe (Maybe, fromMaybe)
 import Data.Newtype (class Newtype, unwrap, wrap)
@@ -49,7 +49,8 @@ derive instance newtypeLightId :: Newtype LightId _
 newtype Light = Light
   { color :: LightColor
   , prevColor :: LightColor
-  , transitionStart :: Instant
+  --, transitionStart :: Instant
+  , transitionStart :: Milliseconds
   , transitionTime :: Milliseconds
   }
 derive instance newtypeLight :: Newtype Light _
@@ -67,7 +68,7 @@ nextState
   -> Light
   -> Eff (now :: NOW | e) Light
 nextState nextColor transitionTime light = do
-  transitionStart <- now
+  transitionStart <- unInstant <$> now
 
   pure $ wrap
     { color: nextColor
