@@ -9,7 +9,10 @@ import Handlers (getStateHandler, registerLuminaireHandler, setLightHandler)
 import Luminaire (Luminaires)
 import Node.Express.App (App, get, post, put)
 
-registerRoutes :: forall e. Luminaires -> App (ref :: REF, now :: NOW, console :: CONSOLE | e)
+registerRoutes
+  :: forall e
+   . Luminaires
+  -> App (ref :: REF, now :: NOW, console :: CONSOLE | e)
 registerRoutes state = do
   get  "/luminaires"                     (getStateHandler          state)
   put  "/luminaires/:id"                 (registerLuminaireHandler state)

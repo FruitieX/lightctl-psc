@@ -18,12 +18,17 @@ import Routes (registerRoutes)
 import WebSocket.Ws (WS)
 import Ws (initWs)
 
-parseInt :: String -> Int
+parseInt
+  :: String
+  -> Int
 parseInt str = fromMaybe 0 $ fromString str
 
 foreign import jsonBodyParser :: forall e. Fn3 Request Response (ExpressM e Unit) (ExpressM e Unit)
 
-appSetup :: forall e. Luminaires -> App (ref :: REF, now :: NOW, console :: CONSOLE | e)
+appSetup
+  :: forall e
+   . Luminaires
+  -> App (ref :: REF, now :: NOW, console :: CONSOLE | e)
 appSetup state = do
   liftEff $ log "Setting up"
   useExternal jsonBodyParser

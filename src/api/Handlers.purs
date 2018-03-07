@@ -7,9 +7,9 @@ import Control.Monad.Eff.Exception (error)
 import Control.Monad.Eff.Now (NOW)
 import Control.Monad.Eff.Ref (REF, readRef)
 import Control.Monad.Except (runExcept)
-import Data.Either (Either, hush)
+import Data.Either (hush)
 import Data.FoldableWithIndex (foldlWithIndex)
-import Data.Foreign (MultipleErrors, readString)
+import Data.Foreign (Foreign)
 import Data.Map (empty, insert, showTree)
 import Data.Maybe (Maybe(Just))
 import Data.Newtype (wrap)
@@ -20,9 +20,10 @@ import Data.Tuple.Nested ((/\))
 import Light (Light(..), LightColor, LightId(..), Lights)
 import Luminaire (GatewayId(..), Luminaire(..), LuminaireId(..), Luminaires, registerLuminaire, setLight)
 import Node.Express.Handler (Handler, nextThrow)
-import Node.Express.Request (getBody', getBodyParam, getRouteParam)
+import Node.Express.Request (getBodyParam, getRouteParam)
 import Node.Express.Response (sendJson)
-import Simple.JSON (read, readJSON)
+import Simple.JSON (read)
+import Utils (getBody)
 
 getStateHandler :: forall e. Luminaires -> Handler (ref :: REF | e)
 getStateHandler state = do
@@ -30,16 +31,22 @@ getStateHandler state = do
   sendJson (showTree curState)
 
 --whateverJson :: String ->
-type StupidIntermediateThingy =
+type IntermediateLight =
   { color :: LightColor
   , prevColor :: LightColor
   , transitionStart :: Number
   , transitionTime :: Number
   }
-type StupidIntermediateStrMapThingy = StrMap StupidIntermediateThingy
+type IntermediateLightStrMap = StrMap IntermediateLight
+type IntermediateBody =
+  { gateway :: String
+  , lights :: IntermediateLightStrMap
+  }
 
 -- WTF instant creates a Maybe Instant
-toLight :: StupidIntermediateStrMapThingy -> Lights
+toLight
+  :: IntermediateLightStrMap
+  -> Lights
 toLight =
   foldlWithIndex (\k m v -> do
     let transitionStart = Milliseconds v.transitionStart
@@ -47,21 +54,25 @@ toLight =
     insert (LightId k) (Light v { transitionStart = transitionStart, transitionTime = transitionTime }) m
   ) empty
 
-registerLuminaireHandler :: forall e. Luminaires -> Handler (ref :: REF | e)
+registerLuminaireHandler
+  :: forall e
+   . Luminaires
+  -> Handler (ref :: REF | e)
 registerLuminaireHandler state = do
   idParam <- getRouteParam "id"
   gatewayParam :: Maybe String <- getBodyParam "gateway"
-  body :: Maybe String <- hush <$> runExcept <<< readString <$> getBody'
-  let (json' :: Maybe (Either MultipleErrors StupidIntermediateStrMapThingy)) = readJSON <$> body
-  let (json :: Maybe StupidIntermediateStrMapThingy) = hush =<< json'
+  --body :: Maybe String <- hush <$> runExcept <<< readString <$> getBody'
+  body :: Foreign <- getBody
+  let (json :: Maybe IntermediateBody) = hush <$> runExcept $ read body
 
-  let lights = toLight <$> json
+  let lights = toLight <$> _.lights <$> json
 
   case idParam /\ lights /\ gatewayParam of
     Just id /\ Just lights' /\ Just gateway -> do
       liftEff $ registerLuminaire (LuminaireId id) (Luminaire { gateway: GatewayId gateway, lights: lights' }) state
       sendJson { status: "Luminaire registered" }
-    _ -> nextThrow $ error "Missing parameters"
+    _ -> do
+      nextThrow $ error "Missing parameters"
 
 setLightHandler
   :: forall e

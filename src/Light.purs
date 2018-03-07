@@ -35,7 +35,7 @@ newtype LightColor = LightColor
 derive newtype instance rfLightColor :: ReadForeign LightColor
 instance showLightColor :: Show LightColor where
   show (LightColor color) =
-    "HSV:" <> show color.hue <> show color.saturation <> show color.value
+    "(" <> show color.hue <> ", " <> show color.saturation <> ", " <> show color.value <> ")"
 
 newtype LightId = LightId String
 instance showLightId :: Show LightId where
@@ -59,7 +59,7 @@ type Lights = Map LightId Light
 
 instance showLight :: Show Light where
   show (Light state) =
-    "Color:" <> show state.color <> ", Prev color: " <> show state.prevColor
+    "Color: " <> show state.color <> ", Prev color: " <> show state.prevColor
 
 nextState
   :: forall e
