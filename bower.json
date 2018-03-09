@@ -17,7 +17,8 @@
     "purescript-numbers": "^5.0.0",
     "purescript-record": "^0.2.6",
     "purescript-now": "^3.0.0",
-    "purescript-tuples": "^4.1.0"
+    "purescript-tuples": "^4.1.0",
+    "purescript-aff-bus": "^3.0.1"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"

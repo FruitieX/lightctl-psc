@@ -2,6 +2,8 @@ module Handlers where
 
 import Prelude
 
+import Control.Monad.Aff (launchAff_)
+import Control.Monad.Eff.AVar (AVAR)
 import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Exception (error)
 import Control.Monad.Eff.Now (NOW)
@@ -18,14 +20,17 @@ import Data.StrMap (StrMap)
 import Data.Time.Duration (Milliseconds(..))
 import Data.Tuple.Nested ((/\))
 import Light (Light(..), LightColor, LightId(..), Lights)
-import Luminaire (GatewayId(..), Luminaire(..), LuminaireId(..), Luminaires, registerLuminaire, setLight)
+import Luminaire (GatewayId(GatewayId), Luminaire(Luminaire), LuminaireChangeBus, LuminaireId(LuminaireId), Luminaires, registerLuminaire, setLight)
 import Node.Express.Handler (Handler, nextThrow)
 import Node.Express.Request (getBodyParam, getRouteParam)
 import Node.Express.Response (sendJson)
 import Simple.JSON (read)
 import Utils (getBody)
 
-getStateHandler :: forall e. Luminaires -> Handler (ref :: REF | e)
+getStateHandler
+  :: forall e
+   . Luminaires
+  -> Handler (ref :: REF | e)
 getStateHandler state = do
   curState <- liftEff $ readRef state
   sendJson (showTree curState)
@@ -57,8 +62,9 @@ toLight =
 registerLuminaireHandler
   :: forall e
    . Luminaires
+  -> LuminaireChangeBus
   -> Handler (ref :: REF | e)
-registerLuminaireHandler state = do
+registerLuminaireHandler state bus = do
   idParam <- getRouteParam "id"
   gatewayParam :: Maybe String <- getBodyParam "gateway"
   --body :: Maybe String <- hush <$> runExcept <<< readString <$> getBody'
@@ -77,8 +83,9 @@ registerLuminaireHandler state = do
 setLightHandler
   :: forall e
    . Luminaires
-  -> Handler (ref :: REF, now :: NOW | e)
-setLightHandler state = do
+  -> LuminaireChangeBus
+  -> Handler (avar :: AVAR, ref :: REF, now :: NOW | e)
+setLightHandler state bus = do
   idParam <- getRouteParam "id"
   lightIdParam <- getRouteParam "lightId"
   colorParam <- (=<<) (\x -> hush $ read' x) <$> getBodyParam "color"
@@ -89,7 +96,7 @@ setLightHandler state = do
 
       let transitionTime = fromString transitionTimeString
 
-      success <- liftEff $ setLight (wrap id) (wrap lightId) color' (Milliseconds <$> transitionTime) state
+      liftEff $ launchAff_ $ setLight (wrap id) (wrap lightId) color' (Milliseconds <$> transitionTime) state bus
       sendJson { status: "Luminaire registered" }
     _ -> nextThrow $ error "Missing parameters"
 

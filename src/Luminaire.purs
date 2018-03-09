@@ -2,7 +2,13 @@ module Luminaire where
 
 import Prelude
 
+import Control.Monad.Aff (Aff)
+import Control.Monad.Aff.Bus (BusRW, write)
+import Control.Monad.Aff.Console (log)
+import Control.Monad.Aff.Unsafe (unsafeCoerceAff)
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.AVar (AVAR)
+import Control.Monad.Eff.Class (liftEff)
 import Control.Monad.Eff.Now (NOW)
 import Control.Monad.Eff.Ref (REF, Ref, modifyRef, newRef, readRef)
 import Data.Map (Map, delete, empty, insert, lookup, member)
@@ -10,6 +16,7 @@ import Data.Maybe (Maybe, isJust)
 import Data.Newtype (class Newtype, over, unwrap)
 import Data.Time.Duration (Milliseconds)
 import Data.Traversable (traverse)
+import Global.Unsafe (unsafeStringify)
 import Light (Light, LightColor, LightId, Lights, nextState)
 
 -- Type definitions
@@ -25,6 +32,12 @@ newtype GatewayId = GatewayId String
 derive instance newtypeGatewayId :: Newtype GatewayId _
 instance showGatewayId :: Show GatewayId where
   show (GatewayId id) = show id
+
+type LuminaireChangeBus = BusRW LuminaireChange
+type LuminaireChange =
+  { id :: LuminaireId
+  , lights :: Lights
+  }
 
 --- Model type definitions
 newtype Luminaire = Luminaire
@@ -90,21 +103,25 @@ setLight
   -> LightColor
   -> (Maybe Milliseconds)
   -> Luminaires
-  -> Eff (ref :: REF, now :: NOW | e) Boolean
-setLight id lid color transitionTime luminaires = do
-  light <- getLuminaireLight id lid luminaires
-  luminaire <- getLuminaire id luminaires
+  -> LuminaireChangeBus
+  -> Aff (avar :: AVAR, ref :: REF, now :: NOW | e) Boolean
+setLight id lid color transitionTime luminaires bus = do
+  light <- liftEff $ getLuminaireLight id lid luminaires
+  luminaire <- liftEff $ getLuminaire id luminaires
 
-  nextLight <- traverse (nextState color transitionTime) light
+  nextLight <- liftEff $ traverse (nextState color transitionTime) light
 
   let curLights = _.lights <<< unwrap <$> luminaire
-  let nextLights = insert lid <$> nextLight <*> curLights
+  let (nextLights :: Maybe (Map LightId Light)) = insert lid <$> nextLight <*> curLights
   let nextLuminaire = nextLuminaire' <$> nextLights <*> luminaire
+
+  _ <- traverse write' $ { id: id, lights: _ } <$> nextLights
 
   isJust <$> traverse (updateLuminaire luminaires) nextLuminaire
 
   where
     nextLuminaire' lights = over Luminaire (_ { lights = lights })
     updateLuminaire luminaires nextLuminaire =
-      modifyRef luminaires
+      liftEff $ modifyRef luminaires
         (\l -> insert id nextLuminaire l)
+    write' = (\change -> write change bus)
